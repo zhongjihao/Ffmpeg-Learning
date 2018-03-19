@@ -1,6 +1,5 @@
-最简单的基于FFmpeg的视音频分离器（简化版）
+最简单的基于FFmpeg的视音频分离器（简化版）\
 Simplest FFmpeg Demuxer Simple
-
 
 本程序将一个FLV封装的文件（其中视频编码为H.264，音频编码为MP3）分离成为两个文件：一个H.264编码的视频码流文件，一个MP3编码的音频码流文件。
 需要注意的是，本程序是一个简单版的视音频分离器（Demuxer）。该分离器与原版的不同在于，没有初始化输出视频流和音频流的AVFormatContext。而是直接将解码后的得到的
@@ -26,14 +25,13 @@ AVPacket中的的数据通过fwrite()写入文件，但是缺点是并不适用�
    
    复用格式是FLV/MKV/MP4则不行。分离某些封装格式（例如MP4/FLV/MKV等）中的H.264的时候，需要首先写入SPS和PPS，否则会导致分离出来的数据
    没有SPS、PPS而无法播放,H.264的SPS和PPS信息存储在AVCodecContext的extradata中。需要使用ffmpeg中名称
-   为“h264_mp4toannexb”的bitstream filter处理。有两种处理方式：
+   为“h264_mp4toannexb”的bitstream filter处理。有两种处理方式： \
    1.使用bitstream filter处理每个AVPacket（简单）
      把每个AVPacket中的数据（data字段）经过bitstream filter“过滤”一遍。关键函数是av_bitstream_filter_filter()。
      把av_bitstream_filter_filter()的输入数据和输出数据（分别对应第4,5,6,7个参数）都设置成AVPacket的data字段就可以了。经过
      处理之后，AVPacket中的数据有如下变化：
 	   每个AVPacket的data添加了H.264的NALU的起始码{0,0,0,1}
-	   每个IDR帧数据前面添加了SPS和PPS
-   
+	   每个IDR帧数据前面添加了SPS和PPS \
    2. 手工添加SPS，PPS（稍微复杂）
      将AVCodecContext的extradata数据经过bitstream filter处理之后得到SPS、PPS，拷贝至每个IDR帧之前。然后修改AVPacket的data，
      把前4个字节改为起始码，经过这两步也可以得到可以播放的H.264码流，相对于上面第一种方法来说复杂一些
