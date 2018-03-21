@@ -37,4 +37,11 @@ AVPacket中的的数据通过fwrite()写入文件，但是缺点是并不适用�
      把前4个字节改为起始码，经过这两步也可以得到可以播放的H.264码流，相对于上面第一种方法来说复杂一些
 
    当封装格式为MPEG2TS的时候，不存在上述问题，在分离MPEG2码流的时候，直接存储AVPacket中data数据到本地文件即可播放
+
+
+编译执行
+   make \
+   ./demuxer_simple
+
+播放h264文件使用mpv Media Player播放器或使用命令播放ffplay -stats -f h264 cuc_ieschool.h264，VLC播放器有问题，播放会出现严重卡顿
 	
