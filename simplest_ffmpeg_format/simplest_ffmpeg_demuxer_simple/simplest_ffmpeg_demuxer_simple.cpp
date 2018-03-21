@@ -1,53 +1,14 @@
-/**
- * ×î¼òµ¥µÄ»ùÓÚFFmpegµÄÊÓÒôÆµ·ÖÀëÆ÷£¨¼ò»¯°æ£©
- * Simplest FFmpeg Demuxer Simple
- *
- * À×Ïöæè Lei Xiaohua
- * leixiaohua1020@126.com
- * ÖÐ¹ú´«Ã½´óÑ§/Êý×ÖµçÊÓ¼¼Êõ
- * Communication University of China / Digital TV Technology
- * http://blog.csdn.net/leixiaohua1020
- *
- * ±¾³ÌÐò¿ÉÒÔ½«·â×°¸ñÊ½ÖÐµÄÊÓÆµÂëÁ÷Êý¾ÝºÍÒôÆµÂëÁ÷Êý¾Ý·ÖÀë³öÀ´¡£
- * ÔÚ¸ÃÀý×ÓÖÐ£¬ ½«FLVµÄÎÄ¼þ·ÖÀëµÃµ½H.264ÊÓÆµÂëÁ÷ÎÄ¼þºÍMP3
- * ÒôÆµÂëÁ÷ÎÄ¼þ¡£
- *
- * ×¢Òâ£º
- * Õâ¸öÊÇ¼ò»¯°æµÄÊÓÒôÆµ·ÖÀëÆ÷¡£ÓëÔ­°æµÄ²»Í¬ÔÚÓÚ£¬Ã»ÓÐ³õÊ¼»¯Êä³ö
- * ÊÓÆµÁ÷ºÍÒôÆµÁ÷µÄAVFormatContext¡£¶øÊÇÖ±½Ó½«½âÂëºóµÄµÃµ½µÄ
- * AVPacketÖÐµÄµÄÊý¾ÝÍ¨¹ýfwrite()Ð´ÈëÎÄ¼þ¡£ÕâÑù×öµÄºÃ´¦ÊÇÁ÷³Ì±È
- * ½Ï¼òµ¥¡£»µ´¦ÊÇ¶ÔÒ»Ð©¸ñÊ½µÄÊÓÒôÆµÂëÁ÷ÊÇ²»ÊÊÓÃµÄ£¬±ÈÈçËµ
- * FLV/MP4/MKVµÈ¸ñÊ½ÖÐµÄAACÂëÁ÷£¨ÉÏÊö·â×°¸ñÊ½ÖÐµÄAACµÄAVPacketÖÐ
- * µÄÊý¾ÝÈ±Ê§ÁË7×Ö½ÚµÄADTSÎÄ¼þÍ·£©¡£
- * 
- *
- * This software split a media file (in Container such as 
- * MKV, FLV, AVI...) to video and audio bitstream.
- * In this example, it demux a FLV file to H.264 bitstream
- * and MP3 bitstream.
- * Note:
- * This is a simple version of "Simplest FFmpeg Demuxer". It is 
- * more simple because it doesn't init Output Video/Audio stream's
- * AVFormatContext. It write AVPacket's data to files directly.
- * The advantages of this method is simple. The disadvantages of
- * this method is it's not suitable for some kind of bitstreams. For
- * example, AAC bitstream in FLV/MP4/MKV Container Format(data in
- * AVPacket lack of 7 bytes of ADTS header).
- *
- */
+/*************************************************************************
+    > File Name: simplest_ffmpeg_demuxer_simple.cpp
+    > Author: zhongjihao
+    > Mail: zhongjihao100@163.com 
+    > Created Time: 2018å¹´03æœˆ20æ—¥ æ˜ŸæœŸäºŒ 17æ—¶08åˆ†38ç§’
+ ************************************************************************/
 
 #include <stdio.h>
 
 #define __STDC_CONSTANT_MACROS
 
-#ifdef _WIN32
-//Windows
-extern "C"
-{
-#include "libavformat/avformat.h"
-};
-#else
-//Linux...
 #ifdef __cplusplus
 extern "C"
 {
@@ -55,7 +16,6 @@ extern "C"
 #include <libavformat/avformat.h>
 #ifdef __cplusplus
 };
-#endif
 #endif
 
 
@@ -67,37 +27,37 @@ int main(int argc, char* argv[])
 	AVFormatContext *ifmt_ctx = NULL;
 	AVPacket pkt;
 	int ret, i;
-	int videoindex=-1,audioindex=-1;
+	int videoindex = -1,audioindex = -1;
 	const char *in_filename  = "cuc_ieschool.flv";//Input file URL
 	const char *out_filename_v = "cuc_ieschool.h264";//Output file URL
 	const char *out_filename_a = "cuc_ieschool.mp3";
 
 	av_register_all();
 	//Input
-	if ((ret = avformat_open_input(&ifmt_ctx, in_filename, 0, 0)) < 0) {
-		printf( "Could not open input file.");
+	if((ret = avformat_open_input(&ifmt_ctx, in_filename, 0, 0)) < 0) {
+		printf("==zhongjihao======Could not open input file.\n");
 		return -1;
 	}
-	if ((ret = avformat_find_stream_info(ifmt_ctx, 0)) < 0) {
-		printf( "Failed to retrieve input stream information");
+	if((ret = avformat_find_stream_info(ifmt_ctx, 0)) < 0) {
+		printf("===zhongjihao=====Failed to retrieve input stream information\n");
 		return -1;
 	}
 
-	videoindex=-1;
+	printf("=======zhongjihao=====ifmt_ctx->nb_streams: %d\n",ifmt_ctx->nb_streams);
 	for(i=0; i<ifmt_ctx->nb_streams; i++) {
-		if(ifmt_ctx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO){
-			videoindex=i;
-		}else if(ifmt_ctx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO){
-			audioindex=i;
+		if(ifmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO){
+			videoindex = i;
+		}else if(ifmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO){
+			audioindex = i;
 		}
 	}
 	//Dump Format------------------
-	printf("\nInput Video===========================\n");
+	printf("\nInput Video=======zhongjihao====================\n");
 	av_dump_format(ifmt_ctx, 0, in_filename, 0);
-	printf("\n======================================\n");
+	printf("\n=============zhongjihao=========================\n");
 
-	FILE *fp_audio=fopen(out_filename_a,"wb+");  
-	FILE *fp_video=fopen(out_filename_v,"wb+");  
+	FILE *fp_audio = fopen(out_filename_a,"w+");  
+	FILE *fp_video = fopen(out_filename_v,"w+");  
 
 	/*
 	FIX: H.264 in some container format (FLV, MP4, MKV etc.) need 
@@ -110,20 +70,22 @@ int main(int argc, char* argv[])
 	AVBitStreamFilterContext* h264bsfc =  av_bitstream_filter_init("h264_mp4toannexb"); 
 #endif
 
-	while(av_read_frame(ifmt_ctx, &pkt)>=0){
-		if(pkt.stream_index==videoindex){
+	while(av_read_frame(ifmt_ctx, &pkt) >= 0){
+		if(pkt.stream_index == videoindex){
 #if USE_H264BSF
+
+			printf("==1===zhongjihao======Write Video Packet. size:%d\tpts:%lld,  data[0]: %d, %d ,%d ,%d, sps=%x\n",pkt.size,pkt.pts,pkt.data[0],pkt.data[1],pkt.data[2],pkt.data[3],pkt.data[4]);
 			av_bitstream_filter_filter(h264bsfc, ifmt_ctx->streams[videoindex]->codec, NULL, &pkt.data, &pkt.size, pkt.data, pkt.size, 0);
 #endif
-			printf("Write Video Packet. size:%d\tpts:%lld\n",pkt.size,pkt.pts);
+			printf("==2===zhongjihao======Write Video Packet. size:%d\tpts:%lld,  data[0]: %d, %d ,%d ,%d, sps=%x\n",pkt.size,pkt.pts,pkt.data[0],pkt.data[1],pkt.data[2],pkt.data[3],pkt.data[4]);
 			fwrite(pkt.data,1,pkt.size,fp_video);
-		}else if(pkt.stream_index==audioindex){
+		}else if(pkt.stream_index == audioindex){
 			/*
 			AAC in some container format (FLV, MP4, MKV etc.) need to add 7 Bytes
 			ADTS Header in front of AVPacket data manually.
 			Other Audio Codec (MP3...) works well.
 			*/
-			printf("Write Audio Packet. size:%d\tpts:%lld\n",pkt.size,pkt.pts);
+			printf("====zhongjihao======Write Audio Packet. size:%d\tpts:%lld\n",pkt.size,pkt.pts);
 			fwrite(pkt.data,1,pkt.size,fp_audio);
 		}
 		av_free_packet(&pkt);
@@ -138,8 +100,8 @@ int main(int argc, char* argv[])
 
 	avformat_close_input(&ifmt_ctx);
 
-	if (ret < 0 && ret != AVERROR_EOF) {
-		printf( "Error occurred.\n");
+	if(ret < 0 && ret != AVERROR_EOF) {
+		printf("======zhongjihao=====Error occurred.\n");
 		return -1;
 	}
 	return 0;
