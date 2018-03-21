@@ -39,7 +39,7 @@ AVPacket中的的数据通过fwrite()写入文件，但是缺点是并不适用�
    当封装格式为MPEG2TS的时候，不存在上述问题，在分离MPEG2码流的时候，直接存储AVPacket中data数据到本地文件即可播放
 
 
-编译执行
+编译执行 \
    make \
    ./demuxer_simple
 
