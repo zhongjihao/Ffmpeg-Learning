@@ -21,7 +21,8 @@ Ffmpeg在Linux下的编译步骤 \
  三、配置Ffmpeg \
  cd ffmpeg/ \
  执行\
- ./configure --enable-shared --disable-static --extra-libs="-lpthread -lm" --enable-gpl \
+ ./configure --enable-shared --disable-static --pkg-config-flags="--static" \
+             --extra-libs="-lpthread -lm" --enable-gpl \
 	 --enable-libass --enable-libfdk-aac --enable-libfreetype --enable-libmp3lame --enable-libopus \
 	--enable-libtheora --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 --enable-nonfree
 
