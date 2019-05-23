@@ -6,13 +6,12 @@ Ffmpeg在Linux下的编译步骤 \
        sudo apt-get upgrade \
        sudo apt-get update -qq && sudo apt-get -y install autoconf automake build-essential cmake git \
        libass-dev libfreetype6-dev libsdl2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev \
-       libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev mercurial pkg-config texinfo wget zlib1g-dev libsdl2-dev \
-       libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev
+       libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev mercurial pkg-config texinfo wget zlib1g-dev
        
    sudo apt-get install nasm \
    sudo apt-get install yasm \
    sudo apt-get install libx264-dev \
-   sudo apt-get install libx265-dev\
+   sudo apt-get install libx265-dev libnuma-dev -y \
    sudo apt-get install libvpx-dev \
    sudo apt-get install libfdk-aac-dev\
    sudo apt-get install libmp3lame-dev \
