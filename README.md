@@ -15,15 +15,17 @@ Ffmpeg在Linux下的编译步骤 \
    sudo apt-get install libvpx-dev \
    sudo apt-get install libfdk-aac-dev\
    sudo apt-get install libmp3lame-dev \
-   sudo apt-get install libopus-dev
+   sudo apt-get install libopus-dev \
+   sudo apt-get install libspeex-dev -y
 
  三、配置Ffmpeg \
  cd ffmpeg/ \
  执行\
- ./configure --enable-shared --disable-static --pkg-config-flags="--static" \
-             --extra-libs="-lpthread -lm" --enable-gpl \
-	 --enable-libass --enable-libfdk-aac --enable-libfreetype --enable-libmp3lame --enable-libopus \
-	--enable-libtheora --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 --enable-nonfree
+ ./configure --prefix=/usr/local/ffmpeg --enable-shared --disable-static --pkg-config-flags="--static" \
+ --extra-libs="-lpthread -lm" --enable-gpl --enable-libass --enable-libfdk-aac --enable-libfreetype \
+ --enable-libmp3lame --enable-libopus --enable-libtheora --enable-libvorbis --enable-libvpx --enable-libx264 \
+ --enable-libx265 --enable-nonfree --enable-debug --enable-filter=delogo --disable-optimizations --enable-libspeex \
+ --enable-hardcoded-tables --host-cflags= --host-ldflags=
 
  四、编译安装 \
  make \
