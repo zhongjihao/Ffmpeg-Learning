@@ -42,3 +42,7 @@ simplest_ffmpeg_streamer工程包含如下部分 \
  最简单的基于FFmpeg的封装格式处理：视音频复用器（muxer）\
  最简单的基于FFMPEG的封装格式处理：封装格式转换（remuxer）
 
+ simplest_ffmpeg_demo工程包含如下部分 \
+ 1 Ffmpeg文件目录基本操作
+ 2 从MP4中分离出h264视频和aac音频
+

@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 	int videoindex = -1,audioindex = -1;
 	int frame_index = 0;
 
-	const char *in_filename  = "cuc_ieschool.ts";//Input file URL
+	const char *in_filename  = "test.mp4";//"cuc_ieschool.ts";//Input file URL
 	//char *in_filename  = "cuc_ieschool.mkv";
 	const char *out_filename_v = "cuc_ieschool.h264";//Output file URL
 	//char *out_filename_a = "cuc_ieschool.mp3";
