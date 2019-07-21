@@ -6,25 +6,22 @@ Ffmpeg在Linux下的编译步骤 \
        sudo apt-get upgrade \
        sudo apt-get update -qq && sudo apt-get -y install autoconf automake build-essential cmake git \
        libass-dev libfreetype6-dev libsdl2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev \
-       libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev mercurial pkg-config texinfo wget zlib1g-dev libsdl2-dev \
-       libva-dev libvdpau-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev
+       libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev mercurial pkg-config texinfo wget zlib1g-dev
        
    sudo apt-get install nasm \
    sudo apt-get install yasm \
    sudo apt-get install libx264-dev \
-   sudo apt-get install libx265-dev\
+   sudo apt-get install libx265-dev libnuma-dev -y \
    sudo apt-get install libvpx-dev \
    sudo apt-get install libfdk-aac-dev\
    sudo apt-get install libmp3lame-dev \
-   sudo apt-get install libopus-dev
+   sudo apt-get install libopus-dev \
+   sudo apt-get install libspeex-dev -y
 
  三、配置Ffmpeg \
  cd ffmpeg/ \
  执行\
- ./configure --enable-shared --disable-static --pkg-config-flags="--static" \
-             --extra-libs="-lpthread -lm" --enable-gpl \
-	 --enable-libass --enable-libfdk-aac --enable-libfreetype --enable-libmp3lame --enable-libopus \
-	--enable-libtheora --enable-libvorbis --enable-libvpx --enable-libx264 --enable-libx265 --enable-nonfree
+ ./configure --prefix=/usr/local/ffmpeg --enable-gpl --enable-nonfree --enable-libfdk-aac --enable-libx264 --enable-libx265 --enable-filter=delogo --enable-debug --disable-optimizations --enable-opengl --enable-libspeex --enable-libopus --enable-libmp3lame --enable-shared --enable-pthreads
 
  四、编译安装 \
  make \
@@ -44,4 +41,8 @@ simplest_ffmpeg_streamer工程包含如下部分 \
  最简单的基于FFmpeg的封装格式处理：视音频分离器（demuxer）\
  最简单的基于FFmpeg的封装格式处理：视音频复用器（muxer）\
  最简单的基于FFMPEG的封装格式处理：封装格式转换（remuxer）
+
+ simplest_ffmpeg_demo工程包含如下部分 \
+ 1 Ffmpeg文件目录基本操作
+ 2 从MP4中分离出h264视频和aac音频
 
