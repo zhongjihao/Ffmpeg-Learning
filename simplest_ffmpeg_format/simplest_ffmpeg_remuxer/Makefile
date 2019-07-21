@@ -7,5 +7,5 @@ simplest_ffmpeg_remuxer.o : simplest_ffmpeg_remuxer.cpp
 
 .Python : clean
 clean :
-	@rm -f *.o *.mp4 remuxer
+	@rm -f *.o  remuxer
 
