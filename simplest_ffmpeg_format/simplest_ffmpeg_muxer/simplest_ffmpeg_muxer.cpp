@@ -2,7 +2,8 @@
     > File Name: simplest_ffmpeg_muxer.cpp
     > Author: zhongjihao
     > Mail: zhongjihao100@163.com 
-    > Created Time: 2018年03月22日 星期四 10时01分56秒
+		A video stream file encoding H.264 and an audio stream file encoding MP3 or aac
+		are synthesized into a file encapsulated in MP4 format.
  ************************************************************************/
 
 #include <stdio.h>
@@ -14,6 +15,7 @@ extern "C"
 {
 #endif
 
+#include <libavutil/log.h>
 #include <libavformat/avformat.h>
 
 #ifdef __cplusplus
@@ -50,114 +52,20 @@ int main(int argc, char* argv[])
 	int audioindex_a = -1,audioindex_out = -1;
 	int frame_index = 0;
 	int64_t cur_pts_v = 0,cur_pts_a = 0;
+	av_log_set_level(AV_LOG_DEBUG);
 
-	//const char *in_filename_v = "cuc_ieschool.ts";//Input file URL
-	const char *in_filename_v = "cuc_ieschool.h264";
-	const char *in_filename_a = "cuc_ieschool.mp3";
-	//const char *in_filename_a = "gowest.m4a";
-	//const char *in_filename_a = "gowest.aac";
-	//const char *in_filename_a = "huoyuanjia.mp3";
+	//read two params from console
+	if(argc < 4){
+		av_log(NULL,AV_LOG_ERROR,"the count of params should be more than four\n");
+		return -1;
+	}
 
-	const char *out_filename = "cuc_ieschool.mp4";//Output file URL
+	//Input file URL
+	const char *in_filename_v  = argv[1];//Input video file URL
+	const char *in_filename_a = argv[2];//Input audio file URL
+	const char *out_filename = argv[3];//Output file URL
+
 	av_register_all();
-	//Input
-	if ((ret = avformat_open_input(&ifmt_ctx_v, in_filename_v, 0, 0)) < 0) {
-		printf( "Could not open input file.\n");
-		goto end;
-	}
-	if ((ret = avformat_find_stream_info(ifmt_ctx_v, 0)) < 0) {
-		printf( "Failed to retrieve input stream information\n");
-		goto end;
-	}
-
-	if ((ret = avformat_open_input(&ifmt_ctx_a, in_filename_a, 0, 0)) < 0) {
-		printf( "Could not open input file.\n");
-		goto end;
-	}
-	if ((ret = avformat_find_stream_info(ifmt_ctx_a, 0)) < 0) {
-		printf( "Failed to retrieve input stream information\n");
-		goto end;
-	}
-	printf("===========Input Information==========\n");
-	av_dump_format(ifmt_ctx_v, 0, in_filename_v, 0);
-	av_dump_format(ifmt_ctx_a, 0, in_filename_a, 0);
-	printf("======================================\n");
-	//Output
-	avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, out_filename);
-	if (!ofmt_ctx) {
-		printf( "Could not create output context\n");
-		ret = AVERROR_UNKNOWN;
-		goto end;
-	}
-	ofmt = ofmt_ctx->oformat;
-
-	for (i = 0; i < ifmt_ctx_v->nb_streams; i++) {
-		//Create output AVStream according to input AVStream
-		if(ifmt_ctx_v->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO){
-			AVStream *in_stream = ifmt_ctx_v->streams[i];
-			AVStream *out_stream = avformat_new_stream(ofmt_ctx, in_stream->codec->codec);
-			videoindex_v = i;
-			if (!out_stream) {
-				printf( "Failed allocating output stream\n");
-				ret = AVERROR_UNKNOWN;
-				goto end;
-			}
-			videoindex_out = out_stream->index;
-			//Copy the settings of AVCodecContext
-			if (avcodec_copy_context(out_stream->codec, in_stream->codec) < 0) {
-				printf( "Failed to copy context from input to output stream codec context\n");
-				goto end;
-			}
-			out_stream->codec->codec_tag = 0;
-			if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-				out_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-			break;
-		}
-	}
-	printf("imft_ctx_v->nb_streams: %d, videoindex_v: %d, videoindex_out: %d\n",ifmt_ctx_v->nb_streams,videoindex_v,videoindex_out);
-
-	for (i = 0; i < ifmt_ctx_a->nb_streams; i++) {
-		//Create output AVStream according to input AVStream
-		if(ifmt_ctx_a->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO){
-			AVStream *in_stream = ifmt_ctx_a->streams[i];
-			AVStream *out_stream = avformat_new_stream(ofmt_ctx, in_stream->codec->codec);
-			audioindex_a = i;
-			if (!out_stream) {
-				printf( "Failed allocating output stream\n");
-				ret = AVERROR_UNKNOWN;
-				goto end;
-			}
-			audioindex_out = out_stream->index;
-			//Copy the settings of AVCodecContext
-			if (avcodec_copy_context(out_stream->codec, in_stream->codec) < 0) {
-				printf( "Failed to copy context from input to output stream codec context\n");
-				goto end;
-			}
-			out_stream->codec->codec_tag = 0;
-			if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-				out_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-
-			break;
-		}
-	}
-	printf("imft_ctx_a->nb_streams: %d, audioindex_a: %d, audioindex_out: %d\n",ifmt_ctx_a->nb_streams,audioindex_a,audioindex_out);
-	
-	printf("==========Output Information==========\n");
-	av_dump_format(ofmt_ctx, 0, out_filename, 1);
-	printf("======================================\n");
-	//Open output file
-	if (!(ofmt->flags & AVFMT_NOFILE)) {
-		if (avio_open(&ofmt_ctx->pb, out_filename, AVIO_FLAG_WRITE) < 0) {
-			printf( "Could not open output file '%s'", out_filename);
-			goto end;
-		}
-	}
-	//Write file header
-	if (avformat_write_header(ofmt_ctx, NULL) < 0) {
-		printf( "Error occurred when opening output file\n");
-		goto end;
-	}
-
 
 	//FIX
 #if USE_H264BSF
@@ -167,13 +75,120 @@ int main(int argc, char* argv[])
 	AVBitStreamFilterContext* aacbsfc =  av_bitstream_filter_init("aac_adtstoasc"); 
 #endif
 
+	//Input
+	if ((ret = avformat_open_input(&ifmt_ctx_v, in_filename_v, 0, 0)) < 0) {
+		av_log(NULL,AV_LOG_ERROR,"Can't open input video file: %s\n",in_filename_v);
+		goto end;
+	}
+
+	if ((ret = avformat_find_stream_info(ifmt_ctx_v, 0)) < 0) {
+		av_log(NULL,AV_LOG_ERROR,"Failed to retrieve input video stream information\n");
+		goto end;
+	}
+
+	if ((ret = avformat_open_input(&ifmt_ctx_a, in_filename_a, 0, 0)) < 0) {
+		av_log(NULL,AV_LOG_ERROR,"Can't open input audio file: %s\n",in_filename_a);
+		goto end;
+	}
+
+	if ((ret = avformat_find_stream_info(ifmt_ctx_a, 0)) < 0) {
+		av_log(NULL,AV_LOG_ERROR,"Failed to retrieve input audio stream information\n");
+		goto end;
+	}
+
+	av_log(NULL,AV_LOG_INFO,"===========Input Information==========\n");
+	av_dump_format(ifmt_ctx_v, 0, in_filename_v, 0);
+	av_dump_format(ifmt_ctx_a, 0, in_filename_a, 0);
+	av_log(NULL,AV_LOG_INFO,"======================\n");
+
+	//Output
+	avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, out_filename);
+	if (!ofmt_ctx) {
+		av_log(NULL,AV_LOG_ERROR,"Could not create output context\n");
+		ret = AVERROR_UNKNOWN;
+		goto end;
+	}
+	ofmt = ofmt_ctx->oformat;
+
+	av_log(NULL,AV_LOG_INFO,"input video stream num: %d\n",ifmt_ctx_v->nb_streams);
+	for (i = 0; i < ifmt_ctx_v->nb_streams; i++) {
+		//Create output AVStream according to input AVStream
+		if(ifmt_ctx_v->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO){
+			AVStream *in_stream = ifmt_ctx_v->streams[i];
+			AVStream *out_stream = avformat_new_stream(ofmt_ctx, in_stream->codec->codec);
+			videoindex_v = i;
+			if (!out_stream) {
+				av_log(NULL,AV_LOG_ERROR,"Failed allocating output stream\n");
+				ret = AVERROR_UNKNOWN;
+				goto end;
+			}
+			videoindex_out = out_stream->index;
+			//Copy the settings of AVCodecContext
+			if (avcodec_copy_context(out_stream->codec, in_stream->codec) < 0) {
+				av_log(NULL,AV_LOG_ERROR,"Failed to copy context from video input to output stream codec context\n");
+				goto end;
+			}
+			out_stream->codec->codec_tag = 0;
+			if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
+				out_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+			break;
+		}
+	}
+	av_log(NULL,AV_LOG_INFO,"input video stream num: %d, videoindex_v: %d, videoindex_out: %d\n",ifmt_ctx_v->nb_streams,videoindex_v,videoindex_out);
+
+	av_log(NULL,AV_LOG_INFO,"input audio stream num: %d\n",ifmt_ctx_a->nb_streams);
+	for (i = 0; i < ifmt_ctx_a->nb_streams; i++) {
+		//Create output AVStream according to input AVStream
+		if(ifmt_ctx_a->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO){
+			AVStream *in_stream = ifmt_ctx_a->streams[i];
+			AVStream *out_stream = avformat_new_stream(ofmt_ctx, in_stream->codec->codec);
+			audioindex_a = i;
+			if (!out_stream) {
+				av_log(NULL,AV_LOG_ERROR,"Failed allocating output stream\n");
+				ret = AVERROR_UNKNOWN;
+				goto end;
+			}
+			audioindex_out = out_stream->index;
+			//Copy the settings of AVCodecContext
+			if (avcodec_copy_context(out_stream->codec, in_stream->codec) < 0) {
+				av_log(NULL,AV_LOG_ERROR,"Failed to copy context from audio input to output stream codec context\n");
+				goto end;
+			}
+			out_stream->codec->codec_tag = 0;
+			if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
+				out_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+			break;
+		}
+	}
+	av_log(NULL,AV_LOG_INFO,"input audio stream num: %d, audioindex_a: %d, audioindex_out: %d\n",ifmt_ctx_a->nb_streams,audioindex_a,audioindex_out);
+	
+	av_log(NULL,AV_LOG_INFO,"===========Output Information==========\n");
+	av_dump_format(ofmt_ctx, 0, out_filename, 1);
+	av_log(NULL,AV_LOG_INFO,"======================\n");
+
+	//Open output file
+	if (!(ofmt->flags & AVFMT_NOFILE)) {
+		if (avio_open(&ofmt_ctx->pb, out_filename, AVIO_FLAG_WRITE) < 0) {
+			av_log(NULL,AV_LOG_ERROR,"Could not open output file '%s'\n",out_filename);
+			goto end;
+		}
+	}
+
+	//Write file header
+	if (avformat_write_header(ofmt_ctx, NULL) < 0) {
+		av_log(NULL,AV_LOG_ERROR,"Error occurred when opening output file\n");
+		goto end;
+	}
+
+
 	while (1) {
 		AVFormatContext *ifmt_ctx;
 		int stream_index = 0;
 		AVStream *in_stream, *out_stream;
 
 		//Get an AVPacket
-		//av_compare_ts比较时间戳，决定写入视频还是写入音频
+		//Compare timestamps to decide whether to write video or audio
 		if(av_compare_ts(cur_pts_v,ifmt_ctx_v->streams[videoindex_v]->time_base,cur_pts_a,ifmt_ctx_a->streams[audioindex_a]->time_base) <= 0){
 			ifmt_ctx = ifmt_ctx_v;
 			stream_index = videoindex_out;
@@ -183,10 +198,8 @@ int main(int argc, char* argv[])
 					in_stream  = ifmt_ctx->streams[pkt.stream_index];
 					out_stream = ofmt_ctx->streams[stream_index];
 
-					//H.264裸流没有PTS/DTS，所以手工添加了PTS/DTS。但是这个添加只适合H.264裸流没有B帧的情况（即只包含I帧和P帧）。
-					//因为代码中pts = dts。裸流中如果包含B针的时候，pts和dts是不相等的.
 					if(pkt.stream_index == videoindex_v){
-						//FIX：No PTS (Example: Raw H.264)
+						//FIX锛歂o PTS (Example: Raw H.264)
 						//Simple Write PTS
 						if(pkt.pts == AV_NOPTS_VALUE){
 							//Write PTS
@@ -217,7 +230,7 @@ int main(int argc, char* argv[])
 
 					if(pkt.stream_index == audioindex_a){
 
-						//FIX：No PTS
+						//FIX锛歂o PTS
 						//Simple Write PTS
 						if(pkt.pts == AV_NOPTS_VALUE){
 							//Write PTS
@@ -257,10 +270,10 @@ int main(int argc, char* argv[])
 		pkt.pos = -1;
 		pkt.stream_index = stream_index;
 
-		printf("Write 1 Packet. size:%5d\tpts:%lld,   pkt.stream_index: %d\n",pkt.size,pkt.pts,pkt.stream_index);
+		av_log(NULL,AV_LOG_DEBUG,"Write 1 Packet. size:%5d\tpts:%lld,   pkt.stream_index: %d\n",pkt.size,pkt.pts,pkt.stream_index);
 		//Write
 		if (av_interleaved_write_frame(ofmt_ctx, &pkt) < 0) {
-			printf( "Error muxing packet\n");
+			av_log(NULL,AV_LOG_ERROR,"Error muxing packet\n");
 			break;
 		}
 		av_free_packet(&pkt);
@@ -284,9 +297,10 @@ end:
 		avio_close(ofmt_ctx->pb);
 	avformat_free_context(ofmt_ctx);
 	if (ret < 0 && ret != AVERROR_EOF) {
-		printf( "Error occurred.\n");
+		av_log(NULL,AV_LOG_ERROR,"Error occurred\n");
 		return -1;
 	}
+
 	return 0;
 }
 
