@@ -103,6 +103,7 @@ int main(int argc, char* argv[])
 			audioindex = i;
 		}
 	}
+	
 	//Dump Format------------------
 	av_log(NULL,AV_LOG_DEBUG,"\n=========Input file===================\n");
 	av_dump_format(ifmt_ctx, 0, in_filename, 0);
