@@ -7,8 +7,6 @@
 
 #include <stdio.h>
 
-//#define __STDC_CONSTANT_MACROS
-
 #ifdef __cplusplus
 extern "C"
 {
