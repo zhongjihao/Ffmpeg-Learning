@@ -1,8 +1,11 @@
 /*************************************************************************
     > File Name: simplest_ffmpeg_remuxer.cpp
     > Author: zhongjihao
-    > Mail: zhongjihao100@163.com 
-    > 视频封装格式转换,无编解码
+    > Mail: zhongjihao100@163.com
+	
+ * This software converts a media file from one container format
+ * to another container format without encoding/decoding video files.
+
  ************************************************************************/
 
 

@@ -1,5 +1,5 @@
 /**
- * 分离出aac编码的音频
+ * Separation of aac audio data
 */
 
 #include <stdio.h>

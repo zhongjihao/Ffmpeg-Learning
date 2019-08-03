@@ -1,8 +1,21 @@
 /*************************************************************************
     > File Name: simplest_ffmpeg_demuxer_simple.cpp
     > Author: zhongjihao
-    > Mail: zhongjihao100@163.com 
-    > Created Time: 2018年03月20日 星期二 17时08分38秒
+    > Mail: zhongjihao100@163.com
+
+ * This software split a media file (in Container such as 
+ * MKV, FLV, AVI...) to video and audio bitstream.
+ * In this example, it demux a FLV file to H.264 bitstream
+ * and MP3 bitstream.
+ * Note:
+ * This is a simple version of "Simplest FFmpeg Demuxer". It is 
+ * more simple because it doesn't init Output Video/Audio stream's
+ * AVFormatContext. It write AVPacket's data to files directly.
+ * The advantages of this method is simple. The disadvantages of
+ * this method is it's not suitable for some kind of bitstreams. For
+ * example, AAC bitstream in FLV/MP4/MKV Container Format(data in
+ * AVPacket lack of 7 bytes of ADTS header).
+
  ************************************************************************/
 
 #include <stdio.h>
@@ -67,14 +80,14 @@ int main(int argc, char* argv[])
 	AVPacket pkt;
 	int ret, i;
 	int videoindex = -1,audioindex = -1;
-	char *in_filename = NULL;
-  char *out_filename_v = NULL;
-	char *out_filename_a = NULL;
+	const char *in_filename = NULL;
+  const char *out_filename_v = NULL;
+	const char *out_filename_a = NULL;
 
 	av_log_set_level(AV_LOG_DEBUG);
   
 	if(argc < 4){
-		av_log(NULL,AV_LOG_ERROR,"the count of params should be more than three\n");
+		av_log(NULL,AV_LOG_ERROR,"the count of params should be more than four\n");
     return -1;
   }
 

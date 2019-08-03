@@ -5,7 +5,7 @@ Simplest FFmpeg Demuxer
 
 编译执行 \
  make \
- ./demuxer
+ ./demuxer input out.h264 out.aac
 
 播放h264文件使用mpv Media Player播放器或使用命令播放ffplay -stats -f h264 cuc_ieschool.h264，VLC播放器有问题，播放会出现严重卡顿
 

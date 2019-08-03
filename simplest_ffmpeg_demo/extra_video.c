@@ -1,5 +1,5 @@
 /**
- * 分离出h264视频
+ * Separation of h264 video data
 */
 
 #include <stdio.h>
