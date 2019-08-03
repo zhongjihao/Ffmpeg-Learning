@@ -14,6 +14,7 @@ extern "C"
 {
 #endif
 
+//#include <libavutil/log.h>
 #include <libavformat/avformat.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/time.h>
@@ -24,14 +25,15 @@ extern "C"
 
 
 /*
- * 本例子实现了推送本地视频至流媒体服务器(以RTMP为例)
- * 是使用FFmpeg进行流媒体推送最简单的教程
+* This example stream local media files to streaming media 
+ * server (Use RTMP as example). 
+ * It's the simplest FFmpeg streamer.
+
 */
 
 int main(int argc, char* argv[])
 {
 	AVOutputFormat* ofmt = NULL;
-	//输入对应一个AVFormatContext，输出对应一个AVFormatContext
     //Input AVFormatContext and Output AVFormatContext
 	AVFormatContext *ifmt_ctx = NULL, *ofmt_ctx = NULL;
 	AVPacket pkt;
@@ -42,9 +44,9 @@ int main(int argc, char* argv[])
 	int64_t start_time = 0;
 
 	in_filename  = "cuc_ieschool.flv";//输入URL (Input file URL)
+	out_filename = "rtmp://localhost:1935/liveApp/room";//输出 URL（Output URL）[RTMP]
 
-	out_filename = "rtmp://10.0.142.118:1935/publishlive/zhongjihao/livestream";//输出 URL（Output URL）[RTMP]
-    
+    av_log_set_level(AV_LOG_DEBUG);
 	av_register_all();
 	//Network
 	avformat_network_init();
@@ -70,15 +72,15 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	printf("====zhongjihao======input stream number: %d, videoindex: %d\n",ifmt_ctx->nb_streams,videoindex);
+	av_log(NULL,AV_LOG_DEBUG,"input stream number: %d, videoindex: %d\n",ifmt_ctx->nb_streams,videoindex);
 	av_dump_format(ifmt_ctx, 0, in_filename, 0);
 	
-	//输出(Output)
+	//(Output)
 	avformat_alloc_output_context2(&ofmt_ctx, NULL, "flv", out_filename); //RTMP
     
 	if(!ofmt_ctx) 
 	{
-		printf( "Could not create output context\n");
+		av_log(NULL,AV_LOG_ERROR, "Could not create output context\n");
 		ret = AVERROR_UNKNOWN;
 		goto end;
 	}
@@ -86,16 +88,16 @@ int main(int argc, char* argv[])
 	
 	for(i = 0; i < ifmt_ctx->nb_streams; i++)
 	{
-	   //根据输入流创建输出流(Create output AVStream according to input AVStream)
+	   //(Create output AVStream according to input AVStream)
 	   AVStream *in_stream = ifmt_ctx->streams[i];
 	   AVStream *out_stream = avformat_new_stream(ofmt_ctx, in_stream->codec->codec);
 	   if(!out_stream) 
 	   {
-		   printf( "Failed allocating output stream\n");
+		   av_log(NULL,AV_LOG_ERROR, "Failed allocating output stream\n");
 		   ret = AVERROR_UNKNOWN;
 		   goto end;
 	   }
-	   //复制AVCodecContext的设置(Copy the settings of AVCodecContext)
+	   //(Copy the settings of AVCodecContext)
 	 //  AVCodecParameters *par = avcodec_parameters_alloc();
 	  // avcodec_parameters_from_context(par,in_stream->codec);
 	  // ret = avcodec_parameters_to_context(out_stream->codec,par);
@@ -103,44 +105,44 @@ int main(int argc, char* argv[])
        ret = avcodec_copy_context(out_stream->codec, in_stream->codec);
 	   if(ret < 0)
 	   {
-		   printf( "Failed to copy context from input to output stream codec context\n");
+		   av_log(NULL,AV_LOG_ERROR, "Failed to copy context from input to output stream codec context\n");
 		   goto end;
 	   }
 	//   out_stream->codec->codec_tag = 0;
 	   out_stream->codecpar->codec_tag = 0;
-	   printf("=====zhongjihao=========out_stream->codec->flags: %d  ofmt_ctx->oformat->flags: %x\n",out_stream->codec->flags,ofmt_ctx->oformat->flags);
+	   av_log(NULL,AV_LOG_DEBUG,"out_stream->codec->flags: %d  ofmt_ctx->oformat->flags: %x\n",out_stream->codec->flags,ofmt_ctx->oformat->flags);
 	   if(ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
 		   out_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
     
 	//Dump Format------------------
 	av_dump_format(ofmt_ctx, 0, out_filename, 1);
-	printf("=====zhongjihao=====name: %s, long_name: %s, mimetype: %s, flags: %d\n",ofmt->name,ofmt->long_name,ofmt->mime_type,ofmt->flags);
+	av_log(NULL,AV_LOG_DEBUG,"name: %s, long_name: %s, mimetype: %s, flags: %d\n",ofmt->name,ofmt->long_name,ofmt->mime_type,ofmt->flags);
 
-	//打开输出URL(Open output URL)
+	//(Open output URL)
 	if(!(ofmt->flags & AVFMT_NOFILE))
 	{
 		ret = avio_open(&ofmt_ctx->pb, out_filename, AVIO_FLAG_WRITE);
 		if(ret < 0)
 		{
-			printf( "Could not open output URL '%s'\n", out_filename);
+			av_log(NULL,AV_LOG_ERROR, "Could not open output URL '%s'\n", out_filename);
 			goto end;
 		}
 	}
-	//写文件头(Write file header)
+	//(Write file header)
 	ret = avformat_write_header(ofmt_ctx, NULL);
 	if(ret < 0)
 	{
-		printf("Error occurred when opening output URL\n");
+		av_log(NULL,AV_LOG_ERROR,"Error occurred when opening output URL\n");
 		goto end;
 	}
 
 	start_time = av_gettime();
-	printf("==zhongjihao====start_time: %d\n",start_time);	
+	av_log(NULL,AV_LOG_DEBUG,"start_time: %d\n",start_time);	
 	while (1)
 	{
 		AVStream *in_stream, *out_stream;
-		//获取一个AVPacket(Get an AVPacket)
+		//(Get an AVPacket)
 		ret = av_read_frame(ifmt_ctx, &pkt);
 		if(ret < 0)
 			break;
@@ -179,7 +181,7 @@ int main(int argc, char* argv[])
 		//Print to Screen
 		if(pkt.stream_index == videoindex)
 		{
-			printf("Send %8d video frames to output URL   videoindex: %d\n",frame_index,videoindex);
+			av_log(NULL,AV_LOG_DEBUG,"Send %8d video frames to output URL   videoindex: %d\n",frame_index,videoindex);
 			frame_index++;
 		}
 	//	ret = av_write_frame(ofmt_ctx, &pkt);
@@ -187,34 +189,35 @@ int main(int argc, char* argv[])
 
 		if(ret < 0)
 		{
-			printf( "====zhongjihao===Error muxing packet\n");
+			av_log(NULL,AV_LOG_ERROR, "Error muxing packet\n");
+			av_free_packet(&pkt);
 			break;
 		}
 		
 		av_free_packet(&pkt);
 	}
 
-	av_dump_format(ofmt_ctx, 0, out_filename, 1);
-	//写文件尾(Write file trailer)
+	//(Write file trailer)
 	ret = av_write_trailer(ofmt_ctx);
+	av_log(NULL,AV_LOG_DEBUG, "Write file trailer ret : %d\n",ret);
 
 	av_dump_format(ofmt_ctx, 0, out_filename, 1);
 	//avformat_flush(ofmt_ctx);	
-	printf( "======zhongjihao===Write file trailer ret : %d\n",ret);	
 	
 end:
 	avformat_close_input(&ifmt_ctx);
 	/* close output */
 
-	printf( "====zhongjihao===ofmt->flags: %d\n",ofmt->flags);	
+	av_log(NULL,AV_LOG_DEBUG, "ofmt->flags: %d\n",ofmt->flags);	
 	if(ofmt_ctx && !(ofmt->flags & AVFMT_NOFILE))
 		avio_close(ofmt_ctx->pb);
 	avformat_free_context(ofmt_ctx);
 	if(ret < 0 && ret != AVERROR_EOF)
 	{
-		printf("Error occurred.\n");
+		av_log(NULL,AV_LOG_ERROR,"Error occurred.\n");
 		return -1;
 	}
+
 	return 0;
 }
 

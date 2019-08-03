@@ -108,6 +108,7 @@ ffplay -protocol_whitelist "file,http,https,rtp,udp,tcp,tls" -i test.sdp
 	
 拉流
     ffmpeg -i rtmp://localhost:1935/liveApp/room -c copy -f flv dump.flv
+    或 ffplay rtmp://localhost:1935/liveApp/room
 
 
 录制屏幕（mkv格式）：
