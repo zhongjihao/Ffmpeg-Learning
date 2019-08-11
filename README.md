@@ -2,7 +2,7 @@ Github上下载速度太慢解决方法 \
 1 首先在https://www.ipaddress.com/获取一下三个网址的ip \
     github.com \
     github.global.ssl.fastly.net \
-    codeload.github.com \
+    codeload.github.com
 
 2 将上面获取的ip和对应的域名写入到hosts文件中 \
   sudo vim /etc/hosts
@@ -70,12 +70,14 @@ FFMPEG 简单操作命令
 CCTV1   http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8
 
 
-FFmpeg发送流媒体的命令（UDP，RTP，RTMP） \
-1. UDP \
+FFmpeg发送流媒体的命令(UDP，RTP，RTMP)
+
+1. UDP 
+
 1.1. 发送H.264裸流至组播地址 \
 注：组播地址指的范围是224.0.0.0—239.255.255.255 \
 下面命令实现了发送H.264裸流“test.h264”至地址udp://233.233.233.223:6666 \
-ffmpeg -re -i test.h264 -vcodec copy -f h264 udp://233.233.233.223:6666
+ffmpeg -re -i test.h264 -vcodec copy -f h264 udp://233.233.233.223:6666 \
 注1：-re一定要加，代表按照帧率发送，否则ffmpeg会一股脑地按最高的效率发送数据. \
 注2：-vcodec copy要加，否则ffmpeg会重新编码输入的H.264裸流。
 
@@ -89,14 +91,15 @@ ffplay -max_delay 100000 -f h264 udp://233.233.233.223:6666
 
 1.3. 发送MPEG2裸流至组播地址 \
 下面的命令实现了读取本地摄像头的数据，编码为MPEG2，发送至地址udp://233.233.233.223:6666 \
-ffmpeg -re -i test.h264 -vcodec mpeg2video -f mpeg2video udp://233.233.233.223:6666 \
+ffmpeg -re -i test.h264 -vcodec mpeg2video -f mpeg2video udp://233.233.233.223:6666
 
 1.4.  播放MPEG2裸流 \
 指定-vcodec为mpeg2video即可 \
 ffplay -vcodec mpeg2video udp://233.233.233.223:6666
 
 
-2. RTP \
+2. RTP
+
 2.1. 发送H.264裸流至组播地址. \
 下面命令实现了发送H.264裸流“test.h264”至地址rtp://233.233.233.223:6666 \
 ffmpeg -re -i test.h264 -vcodec copy -f rtp rtp://233.233.233.223:6666 > test.sdp \
