@@ -62,6 +62,8 @@ simplest_ffmpeg_streamer工程包含如下部分 \
  1 Ffmpeg文件目录基本操作 \
  2 从MP4或flv中分离出h264视频和aac或MP3音频
 
+ av_encoder_decoder_demo \
+  1 简单的yuv420p编码h264例子
 
 
 FFMPEG 简单操作命令
