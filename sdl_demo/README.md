@@ -11,4 +11,5 @@ SDL下载地址 \
 3 SDL纹理渲染例子sdl_texture.c \
   gcc -g -o sdltexture sdl_texture.c `pkg-config --cflags --libs sdl2`
 
-
+4 yuv播放器简单例子yuv_player.c \
+  gcc -g -o yuv_play yuv_player.c `pkg-config --cflags --libs sdl2`
