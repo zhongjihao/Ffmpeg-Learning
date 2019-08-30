@@ -157,16 +157,19 @@ ffmpeg -f v4l2 -s 640x480 -i /dev/video0 out.mpg
 分解与复用命令 \
 ffmpeg -i 道路偏离+前车碰撞视频.mp4 -vcodec copy -acodec copy out.flv
 
-//只获取视频 \
+只获取视频 \
 ffmpeg -i 道路偏离+前车碰撞视频.mp4 -vcodec copy -an out.h264 
 
-//提取yuv数据 \
+提取yuv数据 \
 ffmpeg -i 道路偏离+前车碰撞视频.mp4 -an -c:v rawvideo -pix_fmt yuv420p out.yuv \
 -c:v rawvideo 指定将视频转成原始数据 \
 -pix_format yuv420p 指定转换格式为yuv420p
 
+播放Yuv \
+ffplay -f rawvideo -video_size 960x540 -pix_fmt yuv420p out.yuv \
+-video_size来制定yuv的分辨率
 
-//提取pcm数据 \
+提取pcm数据 \
 ffmpeg -i 道路偏离+前车碰撞视频.mp4 -vn -ar 44100 -ac 2 -f s16le out.pcm \
 -ar:指定音频采样率 44100 即44.1KHz \
 -ac:指定音频声道channel 2 为双声道 \

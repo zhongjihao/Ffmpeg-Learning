@@ -1,0 +1,89 @@
+//
+// Created by zhongjihao on 19-8-26.
+//
+
+#ifndef YUVWATERMARK_YUVWATER_H
+#define YUVWATERMARK_YUVWATER_H
+
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+#define FORMAT_NV21 1
+#define FORMAT_NV12 2
+#define FORMAT_YV12 3
+#define FORMAT_I420 4
+
+
+/**
+ * Nv21(分辨率8x4):
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * VUVUVUVU
+ * VUVUVUVU
+ *
+ * Nv12(分辨率8x4):
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * UVUVUVUV
+ * UVUVUVUV
+ *
+ * 分辨率8x4
+ * YUV420P(I420):
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * UUUU
+ * UUUU
+ * VVVV
+ * VVVV
+ *
+ * 分辨率8x4
+ * YV12:
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * YYYYYYYY
+ * VVVV
+ * VVVV
+ * UUUU
+ * UUUU
+ **/
+
+class YuvWater
+{
+public:
+    YuvWater();
+    ~YuvWater();
+
+    //YV12 -> I420
+    void Yv12ToI420(unsigned char* pYv12, unsigned char* pI420, int width, int height);
+    //I420 -> YV12
+    void I420ToYv12(unsigned char* pI420, unsigned char* pYv12, int width, int height);
+    //NV21 -> I420
+    void Nv21ToI420(unsigned char* pNv21,unsigned char* pI420,int width,int height);
+    //I420 -> NV21
+    void I420ToNv21(unsigned char* pI420,unsigned char* pNv21,int width,int height);
+    //NV21 -> NV12
+    void Nv21ToNv12(unsigned char* pNv21,unsigned char* pNv12,int width,int height);
+    //NV12 -> NV21
+    void Nv12ToNv21(unsigned char* pNv12,unsigned char* pNv21,int width,int height);
+    /**
+     * yuvType yuv类型
+     * startX,startY 需要添加水印的位置
+     * waterMarkData 水印YUV数据，可以通过读取水印文件获取
+     * waterMarkW,waterMarkH 水印数据的分辨率
+     * yuvData 源YUV图像数据
+     * yuvW,yuvH 源YUV的分辨率
+     **/
+    void yuvAddWaterMark(int yuvType, int startX, int startY, unsigned char *waterMarkData,
+                         int waterMarkW, int waterMarkH, unsigned char *yuvData, int yuvW, int yuvH);
+};
+
+
+#endif //YUVWATERMARK_YUVWATER_H
