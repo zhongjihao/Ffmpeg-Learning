@@ -187,7 +187,233 @@ void Nv12ToNv21(unsigned char* pNv12,unsigned char* pNv21,int width,int height)
 	}
 }
 
+/**
+ * yuvType yuv类型
+ * startX,startY 开始裁剪的坐标位置
+ * srcYuv 原始YUV数据
+ * srcW,srcH 原始YUV数据的分辨率
+ * tarYuv 存储裁剪的数据
+ * cutW,cutH 裁剪的分辨率
+**/
+void cutCommonYuv(int yuvType, int startX,int startY,unsigned char *srcYuv, int srcW,int srcH,unsigned char *tarYuv,int cutW, int cutH)
+{
+   if(srcYuv == NULL || tarYuv == NULL)
+	   return;
+   if(srcW < startX + cutW || (srcH < startY + cutH))
+	   return;
 
+   switch(yuvType){
+	   case FORMAT_NV21:
+	   case FORMAT_NV12:{
+		    int i;
+			unsigned char* cutY = tarYuv;
+			unsigned char* cutUV = tarYuv + cutW*cutH;
+
+			for(i = 0; i < cutH; i++) {
+				//逐行拷贝Y分量
+				memcpy(cutY+i*cutW, srcYuv+startX+(i+startY)*srcW, cutW);
+			}
+			
+			for(i = 0; i < cutH/2; i++) {
+				//逐行拷贝UV分量
+				memcpy(cutUV+i*cutW, srcYuv+startX+srcW*srcH+(i+startY/2)*srcW, cutW);
+			}
+
+#ifdef DUMP_OUTPUT
+		    char output[256];
+            memset(output,0,sizeof(output));
+            sprintf(output,"cut_nv21_%dx%d.yuv",cutW,cutH);
+            FILE *outPutFp = fopen(output, "w+");
+            fwrite(tarYuv, 1, cutW*cutH*3/2, outPutFp);
+            fclose(outPutFp);
+#endif
+            break;
+	   }
+	   case FORMAT_I420:{
+			int i = 0;
+            char* srcY = srcYuv;
+            char* srcU = srcY + srcW * srcH;
+            char* srcV = srcU + srcW * srcH / 4;
+
+            char* destY = tarYuv;
+            char* destU = destY + cutW*cutH;
+            char* destV = destU + cutW * cutH / 4;
+			
+			//拷贝Y分量
+		    for (i = 0; i < cutH; i++){ //每次循环一次，扫描一行数据
+				memcpy(destY+i*cutW, srcY+startX+(i+startY)*srcW, cutW);
+			}
+			
+			for (i = 0; i < cutH/2; i++){ //每次循环一次，扫描一行数据
+				//拷贝U分量
+				memcpy(destU+i*(cutW/2), srcU+startX/2+(i+startY/2)*(srcW/2), cutW/2);
+				//拷贝V分量
+				memcpy(destV+i*(cutW/2), srcV+startX/2+(i+startY/2)*(srcW/2), cutW/2);
+		  }
+#ifdef DUMP_OUTPUT
+			char output[256];
+			memset(output,0,sizeof(output));
+			sprintf(output,"cut_i420_%dx%d.yuv",cutW,cutH);
+			FILE *outPutFp = fopen(output, "w+");
+			fwrite(tarYuv, 1, cutW*cutH*3/2, outPutFp);
+			fclose(outPutFp);
+#endif
+			break;
+	   } 
+	   case FORMAT_YV12:{
+			int i = 0;
+            char* srcY = srcYuv;
+            char* srcV = srcY + srcW * srcH;
+            char* srcU = srcV + srcW * srcH / 4;
+
+            char* destY = tarYuv;
+            char* destV = destY + cutW*cutH;
+            char* destU = destV + cutW * cutH / 4;
+			
+			//拷贝Y分量
+		    for (i = 0; i < cutH; i++){ //每次循环一次，扫描一行数据
+				memcpy(destY+i*cutW, srcY+startX+(i+startY)*srcW, cutW);
+			}
+			
+			for (i = 0; i < cutH/2; i++){ //每次循环一次，扫描一行数据
+				//拷贝V分量
+				memcpy(destV+i*(cutW/2), srcV+startX/2+(i+startY/2)*(srcW/2), cutW/2);
+				//拷贝U分量
+				memcpy(destU+i*(cutW/2), srcU+startX/2+(i+startY/2)*(srcW/2), cutW/2);
+		  }
+#ifdef DUMP_OUTPUT
+			char output[256];
+			memset(output,0,sizeof(output));
+			sprintf(output,"cut_yv12_%dx%d.yuv",cutW,cutH);
+			FILE *outPutFp = fopen(output, "w+");
+			fwrite(tarYuv, 1, cutW*cutH*3/2, outPutFp);
+			fclose(outPutFp);
+#endif
+			break;
+	   }
+	   default:
+		   break;
+   }
+}
+
+/**
+ * yuvType yuv类型
+ * dstBuf 目标BUF
+ * srcYuv 源yuv
+ * srcW  宽
+ * srcH 高
+ * dirty_Y/dirty_UV 冗余数据
+**/
+void getSpecYuvBuffer(int yuvType,unsigned char *dstBuf, unsigned char *srcYuv, int srcW, int srcH,int dirty_Y,int dirty_UV) 
+{
+	int i;	
+    switch(yuvType){
+		case FORMAT_NV21:
+		case FORMAT_NV12:{
+			 int i;
+			 
+			 for(i = 0; i < srcH*srcW; i++) {
+				 if(srcYuv[i] != dirty_Y) {
+					 dstBuf[i] = srcYuv[i];
+				 }
+			 }
+			 
+			 unsigned char* dstUV = dstBuf + srcW*srcH;
+			 unsigned char* srcUV = srcYuv +srcW*srcH;
+
+			 for(i = 0; i < srcW*srcH/2; i++) { 
+				 if((srcUV[i] != dirty_UV)) {
+					 dstUV[i] = srcUV[i];
+				 }
+			 }
+#ifdef DUMP_OUTPUT
+			 char output[256];
+			 memset(output,0,sizeof(output));
+			 sprintf(output,"nv21_water_buffer_%dx%d.yuv",srcW,srcH);
+			 FILE *tarFp = fopen(output, "w+");
+			 fwrite(dstBuf, 1, srcW*srcH*3/2, tarFp);
+			 fclose(tarFp);
+#endif
+			 break;
+		}
+		case FORMAT_I420:{ 
+			 int i;
+			 
+			 unsigned char* dstY = dstBuf;
+			 unsigned char* dstU = dstY + srcW*srcH;
+			 unsigned char* dstV = dstU + srcW*srcH/4;
+
+			 unsigned char* srcY = srcYuv;
+			 unsigned char* srcU = srcY +srcW*srcH;
+			 unsigned char* srcV = srcU +srcW*srcH/4;
+
+			 for(i = 0; i < srcH*srcW; i++) {
+				 if(srcY[i] != dirty_Y) {
+					 dstY[i] = srcY[i];
+				 }
+			 }
+			 
+			 for(i = 0; i < srcW*srcH/4; i++) { 
+				 if((srcU[i] != dirty_UV)) {
+					 dstU[i] = srcU[i];
+				 }
+			 }
+
+			 for(i = 0; i < srcW*srcH/4; i++) { 
+				 if((srcV[i] != dirty_UV)) {
+					 dstV[i] = srcV[i];
+				 }
+			 }
+#ifdef DUMP_OUTPUT
+			 char output[256];
+			 memset(output,0,sizeof(output));
+			 sprintf(output,"i420_water_buffer_%dx%d.yuv",srcW,srcH);
+			 FILE *tarFp = fopen(output, "w+");
+			 fwrite(dstBuf, 1, srcW*srcH*3/2, tarFp);
+			 fclose(tarFp);
+#endif
+		     break;
+		} 
+		case FORMAT_YV12:{ 
+			 int i;
+			 
+			 unsigned char* dstY = dstBuf;
+			 unsigned char* dstV = dstY + srcW*srcH;
+			 unsigned char* dstU = dstV+ srcW*srcH/4;
+
+			 unsigned char* srcY = srcYuv;
+			 unsigned char* srcV = srcY +srcW*srcH;
+			 unsigned char* srcU = srcV +srcW*srcH/4;
+
+			 for(i = 0; i < srcH*srcW; i++) {
+				 if(srcY[i] != dirty_Y) {
+					 dstY[i] = srcY[i];
+				 }
+			 }
+			 
+			 for(i = 0; i < srcW*srcH/4; i++) { 
+				 if((srcV[i] != dirty_UV)) {
+					 dstV[i] = srcV[i];
+				 }
+			 }
+
+			 for(i = 0; i < srcW*srcH/4; i++) { 
+				 if((srcU[i] != dirty_UV)) {
+					 dstU[i] = srcU[i];
+				 }
+			 }
+#ifdef DUMP_OUTPUT
+			 char output[256];
+			 memset(output,0,sizeof(output));
+			 sprintf(output,"yv12_water_buffer_%dx%d.yuv",srcW,srcH);
+			 FILE *tarFp = fopen(output, "w+");
+			 fwrite(dstBuf, 1, srcW*srcH*3/2, tarFp);
+			 fclose(tarFp);
+#endif
+		     break;
+		}
+	}
+}
 
 /**
  * yuvType yuv类型
@@ -307,19 +533,40 @@ int main(int argc, char **argv)
     int sw = 256, sh = 256;
     int bw = 640, bh = 480;
     FILE* fp1 = NULL;
-    fp1 = fopen("lena_256x256_yuv420p.yuv","rb");
+    //fp1 = fopen("lena_256x256_yuv420p.yuv","rb");
+	fp1 = fopen("nv21_dbws_speed_166x40.yuv","rb");
     FILE* fp2 = NULL;
-    fp2 = fopen("i420_640x480_channel_1_index_9.yuv", "rb");
+    //fp2 = fopen("i420_640x480_channel_2_index_1.yuv", "rb");
+	fp2 = fopen("nv21_640x480_channel_2_index_1.yuv","rb");
 
     //fp2 = fopen("test_nv12_640x480.yuv", "rb");
-    char yuv1[sw*sh*3/2];
+    char yuv1[166*40*3/2];
     char yuv2[bw*bh*3/2];
 
-    fread(yuv1, sw * sh * 3/2,1,fp1);
+    fread(yuv1, 166 * 40 * 3/2,1,fp1);
     fread(yuv2, bw * bh * 3/2, 1, fp2);
 
-    yuvAddWaterMark(FORMAT_I420, 70,100,yuv1,sw, sh, yuv2, bw, bh);
+   // yuvAddWaterMark(FORMAT_I420, 150,230,yuv1,166, 40, yuv2, bw, bh);
+   
+	/*
+	char nv21[166*40*3/2];
+	I420ToNv21(yuv1,nv21,166,40);
+	FILE* out = fopen("nv21_dbws_speed_166x40.yuv","w+");
+	fwrite(nv21, 1, 166*40*3/2, out);
+    fclose(out);
+   */
 
+   char cut[166*40*3/2];
+   cutCommonYuv(FORMAT_NV21,160,200,yuv2, 640,480,cut,166, 40);
+   
+   getSpecYuvBuffer(FORMAT_NV21,cut, yuv1, 166, 40,0x10,0x80);
+   
+   yuvAddWaterMark(FORMAT_NV21, 160,200,cut,166, 40, yuv2, bw, bh);
+   /*
+	FILE* out = fopen("i420_water_speed_166x40.yuv","w+");
+	fwrite(cut, 1, 166*40*3/2, out);
+    fclose(out);
+*/
     fclose(fp1);
     fclose(fp2);
     return 0;
