@@ -16,3 +16,7 @@ SDL下载地址 \
 
 5 yuv叠加生成水印yuv_overlay.c \
   gcc -o yuvwater yuv_overlay.c -DDUMP_OUTPUT
+
+6 pcm播放器简单例子pcm_player.c \
+  gcc -g -o pcm_player pcm_player.c `pkg-config --cflags --libs sdl2`
+
