@@ -1,5 +1,5 @@
 /*************************************************************************
-    > File Name: yuv_player.c
+    > File Name: pcm_player.c
     > Author: zhongjihao
     > Mail: zhongjihao100@163.com 
     > Created Time: 2019年10月25日 19时45分22秒 CST
