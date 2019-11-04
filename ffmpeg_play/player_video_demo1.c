@@ -944,6 +944,14 @@ __FAIL:
             avpicture_free(vp->pict);
             free(vp->pict);
         }
+
+        if(global_video_state->pictq_mutex){
+            SDL_DestroyMutex(global_video_state->pictq_mutex);
+        }
+
+        if(global_video_state->pictq_cond){
+            SDL_DestroyCond(global_video_state->pictq_cond);
+        }
     }
    
     if(win){
@@ -965,6 +973,10 @@ __FAIL:
     if (audiofd1)
     {
         fclose(audiofd1);
+    }
+
+    if(texture_mutex){
+        SDL_DestroyMutex(texture_mutex);
     }
 
     SDL_Quit();

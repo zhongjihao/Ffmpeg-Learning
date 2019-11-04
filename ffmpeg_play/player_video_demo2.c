@@ -866,6 +866,14 @@ __FAIL:
             avpicture_free(vp->bmp);
             free(vp->bmp);
         }
+
+        if(global_video_state->pictq_mutex){
+            SDL_DestroyMutex(global_video_state->pictq_mutex);
+        }
+
+        if(global_video_state->pictq_cond){
+            SDL_DestroyCond(global_video_state->pictq_cond);
+        }
     }
    
     if(win){
@@ -878,6 +886,10 @@ __FAIL:
 
     if(texture){
         SDL_DestroyTexture(texture);
+    }
+    
+    if(text_mutex){
+        SDL_DestroyMutex(text_mutex);
     }
 
     SDL_Quit();

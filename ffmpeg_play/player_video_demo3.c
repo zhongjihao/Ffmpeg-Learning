@@ -1018,6 +1018,14 @@ __QUIT:
             avpicture_free(vp->bmp);
             free(vp->bmp);
         }
+
+        if(global_video_state->pictq_mutex){
+            SDL_DestroyMutex(global_video_state->pictq_mutex);
+        }
+
+        if(global_video_state->pictq_cond){
+            SDL_DestroyCond(global_video_state->pictq_cond);
+        }
     }
    
     if(win){
@@ -1039,6 +1047,10 @@ __QUIT:
     if (yuvfd)
     {
         fclose(yuvfd);
+    }
+
+    if(text_mutex){
+        SDL_DestroyMutex(text_mutex);
     }
 
     SDL_Quit();
