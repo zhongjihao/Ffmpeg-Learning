@@ -285,13 +285,19 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
             }
             is->audio_buf_index = 0;
         }
+        if(is->quit){
+            // SDL_CondSignal(is->pictq_cond);
+            // SDL_CondSignal(is->videoq.cond);
+            // SDL_CondSignal(is->audioq.cond);
+            return;
+        }
         len1 = is->audio_buf_size - is->audio_buf_index;
-        fprintf(stderr, "stream addr:%p, audio_buf_index:%d, audio_buf_size:%d, len1:%d, len:%d\n",
-                stream,
-                is->audio_buf_index,
-                is->audio_buf_size,
-                len1,
-                len);
+        // fprintf(stderr, "stream addr:%p, audio_buf_index:%d, audio_buf_size:%d, len1:%d, len:%d\n",
+        //         stream,
+        //         is->audio_buf_index,
+        //         is->audio_buf_size,
+        //         len1,
+        //         len);
         if(len1 > len)
           len1 = len;
         SDL_MixAudio(stream,(uint8_t *)is->audio_buf + is->audio_buf_index, len1, SDL_MIX_MAXVOLUME);
@@ -572,7 +578,6 @@ int stream_component_open(VideoState *is, int stream_index)
         return -1;
     }
 
-
     if(codecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
 
         // Set audio settings from codec info
@@ -637,7 +642,7 @@ int stream_component_open(VideoState *is, int stream_index)
                           is->audio_ctx->sample_rate,
                           0,
                           NULL);
-        fprintf(stderr, "swr opts: out_channel_layout:%lld, out_sample_fmt:%d, out_sample_rate:%d, in_channel_layout:%lld, in_sample_fmt:%d, in_sample_rate:%d\n",
+        fprintf(stdout, "swr opts: out_channel_layout:%lld, out_sample_fmt:%d, out_sample_rate:%d, in_channel_layout:%lld, in_sample_fmt:%d, in_sample_rate:%d\n",
                 out_channel_layout, AV_SAMPLE_FMT_S16, out_sample_rate, in_channel_layout, is->audio_ctx->sample_fmt, is->audio_ctx->sample_rate);
         swr_init(audio_convert_ctx);
 
@@ -682,8 +687,6 @@ int demux_thread(void *arg)
     is->videoStream=-1;
     is->audioStream=-1;
 
-    global_video_state = is;
-
     // Open video file
     if(avformat_open_input(&pFormatCtx, is->filename, NULL, NULL)!=0)
       return -1; // Couldn't open file
@@ -700,11 +703,16 @@ int demux_thread(void *arg)
     // Find the first video stream
     for(i=0; i<pFormatCtx->nb_streams; i++) {
         if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO && video_index < 0) {
-            video_index=i;
+            video_index = i;
         }
         if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO && audio_index < 0) {
-            audio_index=i;
+            audio_index = i;
         }
+    }
+
+    if(video_index < 0 || audio_index < 0) {
+        fprintf(stderr, "%s: could not open codecs\n", is->filename);
+        goto fail;
     }
 
     if(audio_index >= 0) {
@@ -712,13 +720,12 @@ int demux_thread(void *arg)
     }
     if(video_index >= 0) {
         stream_component_open(is, video_index);
-    }   
-
-    if(is->videoStream < 0 || is->audioStream < 0) {
-        fprintf(stderr, "%s: could not open codecs\n", is->filename);
-        goto fail;
     }
 
+    //set timer
+    fprintf(stdout, "video context: width=%d, height=%d ,frameRate: %d\n", is->video_ctx->width, is->video_ctx->height);
+    schedule_refresh(is, 40);
+    
     win = SDL_CreateWindow("Media Player",
             SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
@@ -783,14 +790,9 @@ int demux_thread(void *arg)
 
 int main(int argc, char *argv[]) 
 {
-
     int             ret = -1;
-
     SDL_Event       event;
-
     VideoState      *is;
-
-    is = av_mallocz(sizeof(VideoState));
 
     if(argc < 2) {
         fprintf(stderr, "Usage: test <file>\n");
@@ -804,6 +806,9 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    is = av_mallocz(sizeof(VideoState));
+    global_video_state = is;
+
     text_mutex = SDL_CreateMutex();
 
     av_strlcpy(is->filename, argv[1], sizeof(is->filename));
@@ -811,13 +816,13 @@ int main(int argc, char *argv[])
     is->pictq_mutex = SDL_CreateMutex();
     is->pictq_cond = SDL_CreateCond();
 
-    schedule_refresh(is, 40);
+   // schedule_refresh(is, 40);
 
     is->parse_tid = SDL_CreateThread(demux_thread, "demux_thread", is);
     if(!is->parse_tid) {
-        av_free(is);
         goto __FAIL;
     }
+
     for(;;) {
 
         SDL_WaitEvent(&event);
@@ -825,8 +830,9 @@ int main(int argc, char *argv[])
           case FF_QUIT_EVENT:
           case SDL_QUIT:
               is->quit = 1;
-              //SDL_Quit();
-              //return 0;
+              SDL_CondSignal(is->pictq_cond);
+              SDL_CondSignal(is->videoq.cond);
+              SDL_CondSignal(is->audioq.cond);
               goto __QUIT;
               break;
           case FF_REFRESH_EVENT:
@@ -841,8 +847,17 @@ __QUIT:
   ret = 0;
 
 __FAIL:
+    if(is->parse_tid){
+        int status;
+        SDL_WaitThread(is->parse_tid,&status);
+    }
+    if(is->video_tid){
+        int status;
+        SDL_WaitThread(is->video_tid,&status);
+    }
+    fprintf(stdout, "Progrem exit release is: %p, global_video_state: %p\n", is,global_video_state);
 
-  if(global_video_state){
+    if(global_video_state){
         // Close the codecs
         if(global_video_state->audio_ctx){
             avcodec_close(global_video_state->audio_ctx);
@@ -860,8 +875,7 @@ __FAIL:
         VideoPicture *vp;
 
         vp = &global_video_state->pictq[is->pictq_windex];
-        if (vp->allocated)
-        { 
+        if (vp->allocated){ 
             //free space if vp->bmp is not NULL
             avpicture_free(vp->bmp);
             free(vp->bmp);
@@ -874,6 +888,8 @@ __FAIL:
         if(global_video_state->pictq_cond){
             SDL_DestroyCond(global_video_state->pictq_cond);
         }
+
+        av_free(global_video_state);
     }
    
     if(win){
@@ -893,15 +909,7 @@ __FAIL:
     }
 
     SDL_Quit();
-  
-    /*
-    if(audiofd){
-        fclose(audiofd);
-    }
-    if(audiofd1){
-        fclose(audiofd1);
-    }
-    */
+    fprintf(stdout, "Exit\n");
     return ret;
 
 }

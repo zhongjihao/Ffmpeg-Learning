@@ -276,29 +276,32 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
     while (len > 0)
     {
-        if (is->audio_buf_index >= is->audio_buf_size)
-        {
+        if (is->audio_buf_index >= is->audio_buf_size){
             /* We have already sent all our data; get more */
             audio_size = audio_decode_frame(is, is->audio_buf, sizeof(is->audio_buf));
-            if (audio_size < 0)
-            {
+            //fprintf(stdout, "quit: %d   audio_size: %d, index: %d, bufSize: %d\n",is->quit,audio_size,is->audio_buf_index,is->audio_buf_size);
+            if (audio_size < 0){
                 /* If error, output silence */
                 is->audio_buf_size = 1024 * 2 * 2;
                 memset(is->audio_buf, 0, is->audio_buf_size);
-            }
-            else
-            {
+            }else{
                 is->audio_buf_size = audio_size;
             }
             is->audio_buf_index = 0;
         }
+        if(is->quit){
+            // SDL_CondSignal(is->pictq_cond);
+            // SDL_CondSignal(is->videoq.cond);
+            // SDL_CondSignal(is->audioq.cond);
+            return;
+        }
         len1 = is->audio_buf_size - is->audio_buf_index;
-        fprintf(stderr, "stream addr:%p, audio_buf_index:%d, audio_buf_size:%d, len1:%d, len:%d\n",
-                stream,
-                is->audio_buf_index,
-                is->audio_buf_size,
-                len1,
-                len);
+        // fprintf(stderr, "stream addr:%p, audio_buf_index:%d, audio_buf_size:%d, len1:%d, len:%d\n",
+        //         stream,
+        //         is->audio_buf_index,
+        //         is->audio_buf_size,
+        //         len1,
+        //         len);
 
         if (len1 > len)
           len1 = len;
@@ -309,6 +312,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
         len -= len1;
         stream += len1;
         is->audio_buf_index += len1;
+
     }
 }
 
@@ -407,7 +411,8 @@ void video_refresh_timer(void *userdata)
         the timing - but I don't suggest that ;)
         We'll learn how to do it for real later.
             */
-            schedule_refresh(is, 33);
+            int frameRate = is->video_ctx->framerate.num /(is->video_ctx->framerate.den);
+            schedule_refresh(is, (int)(1000/frameRate));
 
             /* show the picture! */
             video_display(is);
@@ -718,8 +723,6 @@ int decode_thread(void *arg)
     is->videoStream = -1;
     is->audioStream = -1;
 
-    global_video_state = is;
-
     // Open video file
     if (avformat_open_input(&pFormatCtx, is->filename, NULL, NULL) != 0)
       return -1; // Couldn't open file
@@ -734,36 +737,35 @@ int decode_thread(void *arg)
     av_dump_format(pFormatCtx, 0, is->filename, 0);
 
     // Find the first video stream
-    for (i = 0; i < pFormatCtx->nb_streams; i++)
-    {
+    for (i = 0; i < pFormatCtx->nb_streams; i++){
         if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
-            video_index < 0)
-        {
+            video_index < 0){
             video_index = i;
         }
+        
         if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-            audio_index < 0)
-        {
+            audio_index < 0){
             audio_index = i;
         }
     }
 
-    if (audio_index >= 0)
-    {
-        stream_component_open(is, audio_index);
-    }
-    if (video_index >= 0)
-    {
-        stream_component_open(is, video_index);
-    }
-
-    if (is->videoStream < 0 || is->audioStream < 0)
-    {
+    if (video_index < 0 || audio_index < 0){
         fprintf(stderr, "%s: could not open codecs\n", is->filename);
         goto fail;
     }
 
-    fprintf(stderr, "video context: width=%d, height=%d\n", is->video_ctx->width, is->video_ctx->height);
+    if (audio_index >= 0){
+        stream_component_open(is, audio_index);
+    }
+    
+    if (video_index >= 0){
+        stream_component_open(is, video_index);
+    }
+
+    //set timer
+    int frameRate = is->video_ctx->framerate.num /(is->video_ctx->framerate.den);
+    schedule_refresh(is, (int)(1000 / frameRate));
+    fprintf(stdout, "video context: width=%d, height=%d ,frameRate: %d\n", is->video_ctx->width, is->video_ctx->height,frameRate);
     win = SDL_CreateWindow("Media Player",
                           SDL_WINDOWPOS_UNDEFINED,
                           SDL_WINDOWPOS_UNDEFINED,
@@ -800,13 +802,10 @@ int decode_thread(void *arg)
 
         if (av_read_frame(is->pFormatCtx, packet) < 0)
         {
-            if (is->pFormatCtx->pb->error == 0)
-            {
+            if (is->pFormatCtx->pb->error == 0){
                 SDL_Delay(100); /* no error; wait for user input */
                 continue;
-            }
-            else
-            {
+            }else{
                 break;
             }
         }
@@ -861,21 +860,22 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    audiofd = fopen("testout.pcm", "wb+");
-    audiofd1 = fopen("testout1.pcm", "wb+");
-
     //big struct, it's core
     is = av_mallocz(sizeof(VideoState));
-
+    global_video_state = is;
+    
     // Register all formats and codecs
     av_register_all();
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER))
     {
         fprintf(stderr, "Could not initialize SDL - %s\n", SDL_GetError());
+        av_free(is);
         exit(1);
     }
 
+    audiofd = fopen("testout.pcm", "wb+");
+    audiofd1 = fopen("testout1.pcm", "wb+");
     texture_mutex = SDL_CreateMutex();
 
     av_strlcpy(is->filename, argv[1], sizeof(is->filename));
@@ -883,13 +883,8 @@ int main(int argc, char *argv[])
     is->pictq_mutex = SDL_CreateMutex();
     is->pictq_cond = SDL_CreateCond();
 
-    //set timer
-    schedule_refresh(is, 33);
-
     is->parse_tid = SDL_CreateThread(decode_thread, "decode_thread", is);
-    if (!is->parse_tid)
-    {
-        av_free(is);
+    if (!is->parse_tid){
         goto __FAIL;
     }
 
@@ -903,8 +898,9 @@ int main(int argc, char *argv[])
           case SDL_QUIT:
               fprintf(stderr, "receive a QUIT event: %d\n", event.type);
               is->quit = 1;
-              //SDL_Quit();
-              //return 0;
+              SDL_CondSignal(is->pictq_cond);
+              SDL_CondSignal(is->videoq.cond);
+              SDL_CondSignal(is->audioq.cond);
               goto __QUIT;
               break;
           case FF_REFRESH_EVENT:
@@ -920,6 +916,16 @@ __QUIT:
     ret = 0;
 
 __FAIL:
+    if(is->parse_tid){
+        int status;
+        SDL_WaitThread(is->parse_tid,&status);
+    }
+    if(is->video_tid){
+        int status;
+        SDL_WaitThread(is->video_tid,&status);
+    }
+    fprintf(stdout, "Progrem exit release is: %p, global_video_state: %p\n", is,global_video_state);
+    
     if(global_video_state){
         // Close the codecs
         if(global_video_state->audio_ctx){
@@ -938,8 +944,7 @@ __FAIL:
         VideoPicture *vp;
 
         vp = &global_video_state->pictq[is->pictq_windex];
-        if (vp->allocated)
-        { 
+        if (vp->allocated){ 
             //free space if vp->pict is not NULL
             avpicture_free(vp->pict);
             free(vp->pict);
@@ -952,8 +957,10 @@ __FAIL:
         if(global_video_state->pictq_cond){
             SDL_DestroyCond(global_video_state->pictq_cond);
         }
+        
+        av_free(global_video_state);
     }
-   
+
     if(win){
         SDL_DestroyWindow(win);
     }
@@ -966,12 +973,10 @@ __FAIL:
         SDL_DestroyTexture(texture);
     }
 
-    if (audiofd)
-    {
+    if (audiofd){
         fclose(audiofd);
     }
-    if (audiofd1)
-    {
+    if (audiofd1){
         fclose(audiofd1);
     }
 
@@ -980,5 +985,6 @@ __FAIL:
     }
 
     SDL_Quit();
+    fprintf(stdout, "Exit\n");
     return ret;
 }
