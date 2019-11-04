@@ -920,7 +920,44 @@ __QUIT:
     ret = 0;
 
 __FAIL:
-    SDL_Quit();
+    if(global_video_state){
+        // Close the codecs
+        if(global_video_state->audio_ctx){
+            avcodec_close(global_video_state->audio_ctx);
+        }
+
+        if(global_video_state->video_ctx){
+            avcodec_close(global_video_state->video_ctx);
+        }
+
+        // Close the video file
+        if(global_video_state->pFormatCtx){
+            avformat_close_input(&(global_video_state->pFormatCtx));
+        }
+
+        VideoPicture *vp;
+
+        vp = &global_video_state->pictq[is->pictq_windex];
+        if (vp->allocated)
+        { 
+            //free space if vp->pict is not NULL
+            avpicture_free(vp->pict);
+            free(vp->pict);
+        }
+    }
+   
+    if(win){
+        SDL_DestroyWindow(win);
+    }
+
+    if(renderer){
+        SDL_DestroyRenderer(renderer);
+    }
+
+    if(texture){
+        SDL_DestroyTexture(texture);
+    }
+
     if (audiofd)
     {
         fclose(audiofd);
@@ -929,5 +966,7 @@ __FAIL:
     {
         fclose(audiofd1);
     }
+
+    SDL_Quit();
     return ret;
 }

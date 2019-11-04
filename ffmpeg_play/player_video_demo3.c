@@ -953,10 +953,7 @@ int main(int argc, char *argv[])
     }
 
     //creat window from SDL
-    win = SDL_CreateWindow("Media Player",
-                          100,
-                          100,
-              640,480,
+    win = SDL_CreateWindow("Media Player",100,100,640,480,
                           //is->video_ctx->width, is->video_ctx->height,
                           SDL_WINDOW_RESIZABLE);
     if(!win) {
@@ -997,9 +994,54 @@ int main(int argc, char *argv[])
         }
     }
 __QUIT:
+      if(global_video_state){
+        // Close the codecs
+        if(global_video_state->audio_ctx){
+            avcodec_close(global_video_state->audio_ctx);
+        }
+
+        if(global_video_state->video_ctx){
+            avcodec_close(global_video_state->video_ctx);
+        }
+
+        // Close the video file
+        if(global_video_state->pFormatCtx){
+            avformat_close_input(&(global_video_state->pFormatCtx));
+        }
+
+        VideoPicture *vp;
+
+        vp = &global_video_state->pictq[is->pictq_windex];
+        if (vp->allocated)
+        { 
+            //free space if vp->bmp is not NULL
+            avpicture_free(vp->bmp);
+            free(vp->bmp);
+        }
+    }
+   
+    if(win){
+        SDL_DestroyWindow(win);
+    }
+
+    if(renderer){
+        SDL_DestroyRenderer(renderer);
+    }
+
+    if(texture){
+        SDL_DestroyTexture(texture);
+    }
+
+    if (audiofd)
+    {
+        fclose(audiofd);
+    }
+    if (yuvfd)
+    {
+        fclose(yuvfd);
+    }
+
     SDL_Quit();
-    fclose(yuvfd);
-    fclose(audiofd);
     return 0;
 
 }
