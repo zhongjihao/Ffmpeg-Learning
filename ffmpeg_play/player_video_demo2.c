@@ -354,7 +354,6 @@ void video_display(VideoState *is)
 
 void video_refresh_timer(void *userdata) 
 {
-
     VideoState *is = (VideoState *)userdata;
     VideoPicture *vp;
     double actual_delay, delay, sync_threshold, ref_clock, diff;
@@ -379,7 +378,7 @@ void video_refresh_timer(void *userdata)
             diff = vp->pts - ref_clock;
 
             /* Skip or repeat the frame. Take delay into account
-        FFPlay still doesn't "know if this is the best guess." */
+               FFPlay still doesn't "know if this is the best guess." */
             sync_threshold = (delay > AV_SYNC_THRESHOLD) ? delay : AV_SYNC_THRESHOLD;
             if(fabs(diff) < AV_NOSYNC_THRESHOLD) {
                 if(diff <= -sync_threshold) {
@@ -546,6 +545,7 @@ int decode_video_thread(void *arg)
         if(frameFinished) {
             pts = synchronize_video(is, pFrame, pts);
             if(queue_picture(is, pFrame, pts) < 0) {
+                av_free_packet(packet);
                 break;
             }
         }
@@ -591,7 +591,7 @@ int stream_component_open(VideoState *is, int stream_index)
             // Set audio settings from codec info
             wanted_spec.freq = codecCtx->sample_rate;
             wanted_spec.format = AUDIO_S16SYS;
-            wanted_spec.channels = 2;//codecCtx->channels;
+            wanted_spec.channels = codecCtx->channels;
             wanted_spec.silence = 0;
             wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
             wanted_spec.callback = audio_callback;
@@ -666,8 +666,7 @@ int stream_component_open(VideoState *is, int stream_index)
             is->video_sws_ctx = sws_getContext(is->video_ctx->width, is->video_ctx->height,
                 is->video_ctx->pix_fmt, is->video_ctx->width,
                 is->video_ctx->height, AV_PIX_FMT_YUV420P,
-                SWS_BILINEAR, NULL, NULL, NULL
-                );
+                SWS_BILINEAR, NULL, NULL, NULL);
             is->video_tid = SDL_CreateThread(decode_video_thread, "decode_video_thread", is);
             break;
         default:
@@ -727,14 +726,12 @@ int demux_thread(void *arg)
     }
 
     //set timer
-    fprintf(stdout, "video context: width=%d, height=%d ,frameRate: %d\n", is->video_ctx->width, is->video_ctx->height);
+    fprintf(stdout, "video context: width=%d, height=%d\n", is->video_ctx->width, is->video_ctx->height);
     schedule_refresh(is, 40);
     
-    win = SDL_CreateWindow("Media Player",
-            SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        is->video_ctx->width, is->video_ctx->height,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    win = SDL_CreateWindow("Media Player",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+                            is->video_ctx->width, is->video_ctx->height,
+                            SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     
     renderer = SDL_CreateRenderer(win, -1, 0);
 
