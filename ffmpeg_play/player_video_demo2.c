@@ -578,96 +578,100 @@ int stream_component_open(VideoState *is, int stream_index)
         return -1;
     }
 
-    if(codecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
-
-        // Set audio settings from codec info
-        wanted_spec.freq = codecCtx->sample_rate;
-        wanted_spec.format = AUDIO_S16SYS;
-        wanted_spec.channels = 2;//codecCtx->channels;
-        wanted_spec.silence = 0;
-        wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
-        wanted_spec.callback = audio_callback;
-        wanted_spec.userdata = is;
-        
-        if(SDL_OpenAudio(&wanted_spec, &spec) < 0) {
-            fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
-            return -1;
-        }
-        is->audio_hw_buf_size = spec.size;
-    }
     if(avcodec_open2(codecCtx, codec, NULL) < 0) {
         fprintf(stderr, "Unsupported codec!\n");
         return -1;
     }
 
     switch(codecCtx->codec_type) {
-      case AVMEDIA_TYPE_AUDIO:
-        is->audioStream = stream_index;
-        is->audio_st = pFormatCtx->streams[stream_index];
-        is->audio_ctx = codecCtx;
-        is->audio_buf_size = 0;
-        is->audio_buf_index = 0;
-        memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
-        packet_queue_init(&is->audioq);
+        case AVMEDIA_TYPE_AUDIO:
+            fprintf(stdout, "stream_index: %d ,channelNum: %d, sample_rate: %d\n",stream_index,               
+                                                                                  codecCtx->channels,
+                                                                                  codecCtx->sample_rate);
+            // Set audio settings from codec info
+            wanted_spec.freq = codecCtx->sample_rate;
+            wanted_spec.format = AUDIO_S16SYS;
+            wanted_spec.channels = 2;//codecCtx->channels;
+            wanted_spec.silence = 0;
+            wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
+            wanted_spec.callback = audio_callback;
+            wanted_spec.userdata = is;
+            
+            if(SDL_OpenAudio(&wanted_spec, &spec) < 0) {
+                fprintf(stderr, "SDL_OpenAudio: %s\n", SDL_GetError());
+                return -1;
+            }
+            is->audio_hw_buf_size = spec.size;
+            is->audioStream = stream_index;
+            is->audio_st = pFormatCtx->streams[stream_index];
+            is->audio_ctx = codecCtx;
+            is->audio_buf_size = 0;
+            is->audio_buf_index = 0;
+            memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
+            packet_queue_init(&is->audioq);
 
-        //Out Audio Param
-        uint64_t out_channel_layout=AV_CH_LAYOUT_STEREO;
+            //Out Audio Param
+            uint64_t out_channel_layout=AV_CH_LAYOUT_STEREO;
 
-        //AAC:1024  MP3:1152
-        int out_nb_samples= is->audio_ctx->frame_size;
-        //AVSampleFormat out_sample_fmt = AV_SAMPLE_FMT_S16;
+            //AAC:1024  MP3:1152
+            int out_nb_samples= is->audio_ctx->frame_size;
+            //AVSampleFormat out_sample_fmt = AV_SAMPLE_FMT_S16;
 
-        int out_sample_rate=is->audio_ctx->sample_rate;
-        int out_channels=av_get_channel_layout_nb_channels(out_channel_layout);
-        //Out Buffer Size
-        /*
-        int out_buffer_size=av_samples_get_buffer_size(NULL,
-                                                      out_channels,
-                                                      out_nb_samples,
-                                                      AV_SAMPLE_FMT_S16,
-                                                      1);
-                                                      */
+            int out_sample_rate=is->audio_ctx->sample_rate;
+            int out_channels=av_get_channel_layout_nb_channels(out_channel_layout);
+            //Out Buffer Size
+            /*
+            int out_buffer_size=av_samples_get_buffer_size(NULL,
+                                                        out_channels,
+                                                        out_nb_samples,
+                                                        AV_SAMPLE_FMT_S16,
+                                                        1);
+                                                        */
 
-        //uint8_t *out_buffer=(uint8_t *)av_malloc(MAX_AUDIO_FRAME_SIZE*2);
-        int64_t in_channel_layout=av_get_default_channel_layout(is->audio_ctx->channels);
+            //uint8_t *out_buffer=(uint8_t *)av_malloc(MAX_AUDIO_FRAME_SIZE*2);
+            int64_t in_channel_layout=av_get_default_channel_layout(is->audio_ctx->channels);
 
-        struct SwrContext *audio_convert_ctx;
-        audio_convert_ctx = swr_alloc();
-        swr_alloc_set_opts(audio_convert_ctx,
-                          out_channel_layout,
-                          AV_SAMPLE_FMT_S16,
-                          out_sample_rate,
-                          in_channel_layout,
-                          is->audio_ctx->sample_fmt,
-                          is->audio_ctx->sample_rate,
-                          0,
-                          NULL);
-        fprintf(stdout, "swr opts: out_channel_layout:%lld, out_sample_fmt:%d, out_sample_rate:%d, in_channel_layout:%lld, in_sample_fmt:%d, in_sample_rate:%d\n",
-                out_channel_layout, AV_SAMPLE_FMT_S16, out_sample_rate, in_channel_layout, is->audio_ctx->sample_fmt, is->audio_ctx->sample_rate);
-        swr_init(audio_convert_ctx);
+            struct SwrContext *audio_convert_ctx;
+            audio_convert_ctx = swr_alloc();
+            swr_alloc_set_opts(audio_convert_ctx,
+                            out_channel_layout,
+                            AV_SAMPLE_FMT_S16,
+                            out_sample_rate,
+                            in_channel_layout,
+                            is->audio_ctx->sample_fmt,
+                            is->audio_ctx->sample_rate,
+                            0,
+                            NULL);
+            fprintf(stdout, "swr opts: out_channel_layout:%lld, out_sample_fmt:%d, out_sample_rate:%d, in_channel_layout:%lld, in_sample_fmt:%d, in_sample_rate:%d\n",
+                    out_channel_layout, AV_SAMPLE_FMT_S16, out_sample_rate, in_channel_layout, is->audio_ctx->sample_fmt, is->audio_ctx->sample_rate);
+            swr_init(audio_convert_ctx);
 
-        is->audio_swr_ctx = audio_convert_ctx;
+            is->audio_swr_ctx = audio_convert_ctx;
 
-        SDL_PauseAudio(0);
-        break;
-      case AVMEDIA_TYPE_VIDEO:
-        is->videoStream = stream_index;
-        is->video_st = pFormatCtx->streams[stream_index];
-        is->video_ctx = codecCtx;
+            SDL_PauseAudio(0);
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            fprintf(stdout, "stream_index: %d ,width: %d ,height: %d ,frameRate: %d\n",stream_index,
+                                                                                       codecCtx->width,
+                                                                                       codecCtx->height,
+                                                                                       codecCtx->framerate.num/(codecCtx->framerate.den));
+            is->videoStream = stream_index;
+            is->video_st = pFormatCtx->streams[stream_index];
+            is->video_ctx = codecCtx;
 
-        is->frame_timer = (double)av_gettime() / 1000000.0;
-        is->frame_last_delay = 40e-3;
-        
-        packet_queue_init(&is->videoq);
-        is->video_sws_ctx = sws_getContext(is->video_ctx->width, is->video_ctx->height,
-            is->video_ctx->pix_fmt, is->video_ctx->width,
-            is->video_ctx->height, AV_PIX_FMT_YUV420P,
-            SWS_BILINEAR, NULL, NULL, NULL
-            );
-        is->video_tid = SDL_CreateThread(decode_video_thread, "decode_video_thread", is);
-        break;
-      default:
-        break;
+            is->frame_timer = (double)av_gettime() / 1000000.0;
+            is->frame_last_delay = 40e-3;
+            
+            packet_queue_init(&is->videoq);
+            is->video_sws_ctx = sws_getContext(is->video_ctx->width, is->video_ctx->height,
+                is->video_ctx->pix_fmt, is->video_ctx->width,
+                is->video_ctx->height, AV_PIX_FMT_YUV420P,
+                SWS_BILINEAR, NULL, NULL, NULL
+                );
+            is->video_tid = SDL_CreateThread(decode_video_thread, "decode_video_thread", is);
+            break;
+        default:
+            break;
     }
 }
 
