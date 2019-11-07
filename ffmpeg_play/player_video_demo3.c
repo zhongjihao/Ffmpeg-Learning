@@ -702,7 +702,6 @@ int decode_video_thread(void *arg)
 
 int stream_component_open(VideoState *is, int stream_index) 
 {
-
     AVFormatContext *pFormatCtx = is->pFormatCtx;
     AVCodecContext *codecCtx = NULL;
     AVCodec *codec = NULL;
