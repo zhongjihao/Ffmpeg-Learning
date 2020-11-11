@@ -1,19 +1,3 @@
-Github上下载速度太慢解决方法 \
-1 首先在https://www.ipaddress.com/获取一下三个网址的ip \
-    github.com \
-    github.global.ssl.fastly.net \
-    codeload.github.com
-
-2 将上面获取的ip和对应的域名写入到hosts文件中 \
-  sudo vim /etc/hosts
-
-3 修改完hosts文件还不会立即生效，需要刷新DNS缓存 \
-  sudo /etc/init.d/networking restart \
-  sudo /etc/init.d/dns-clean start
-
-4 关闭浏览器再访问github,进行git clone代码
-
-
 Ffmpeg在Linux下的编译步骤 \
    一、下载FFmpeg \
        git clone https://git.ffmpeg.org/ffmpeg.git \
