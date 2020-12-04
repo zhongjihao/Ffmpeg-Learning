@@ -26,8 +26,17 @@ Ffmpeg在Linux下的编译步骤 \
  四、编译安装 \
  make \
  sudo make install
+ 
+ 五、打开ld.so.conf \
+ sudo vim /etc/ld.so.conf \
+ 添加 /usr/local/ffmpeg/lib
+ 
+ 六、sudo ldconfig
+ 
+ 七、添加到环境变量PATH中 \
+ export PATH=$PATH:/usr/local/ffmpeg/bin
 
- 五、查看FFMpeg版本是否安装成功 \
+ 八、查看FFMpeg版本是否安装成功 \
  ffmpeg -version
 
 
