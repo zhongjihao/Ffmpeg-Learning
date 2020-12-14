@@ -59,9 +59,9 @@ simplest_ffmpeg_streamer工程包含如下部分 \
   1 简单的yuv420p编码h264例子 \
   2 简单的将mp4视频解码为一幅幅BMP图片 \
   3 简单的将pcm16位的音频数据编码为aac \
-    gcc -g -o encode_audio encode_audio.c `pkg-config --libs libavutil libavcodec` -lm \
+    gcc -g -o encode_audio encode_audio.c `pkg-config --libs --cflags libavutil libavcodec` -lm \
   4 简单的AAC音频文件解码为PCM数据 \
-    gcc -g -o decode_audio decode_audio.c `pkg-config --libs libavformat libavutil libavcodec libswresample` \
+    gcc -g -o decode_audio decode_audio.c `pkg-config --libs --cflags libavformat libavutil libavcodec libswresample` \
 	./decode_audio test.aac out.pcm \
 	播放PCM音频文件 \
     ffplay -ar 44100 -ac 2 -f s16le out.pcm
