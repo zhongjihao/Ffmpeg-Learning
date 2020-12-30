@@ -41,8 +41,8 @@ Ffmpeg在Linux下的编译步骤 \
  
  
 编译Android平台各个CPU架构的Ffmpeg动态库的步骤 \
-环境 Ubuntu 16.04 
-NDK版本  android-ndk-r17c \
+环境 Ubuntu 16.04 \
+NDK版本  android-ndk-r17c
 
 编译armv7-a版本动态库脚本build_android_ffmpeg_armv7a.sh内容 \
 #!/bin/bash
