@@ -85,6 +85,10 @@ function build_android {
 
 build_android
 
+执行./build_android_ffmpeg_armv7a.sh \
+make -j8 \
+make install 
+
 编译armv8-a版本动态库脚本build_android_ffmpeg_armv8a.sh内容
 
 #!/bin/bash
@@ -124,7 +128,11 @@ build_android(){
 }
 
 
-build_android           
+build_android
+
+执行./build_android_ffmpeg_armv8a.sh \
+make -j8 \
+make install 
 
 simplest_ffmpeg_streamer工程包含如下部分 \
  最简单的基于FFmpeg的推流器（以推送RTMP为例) \
