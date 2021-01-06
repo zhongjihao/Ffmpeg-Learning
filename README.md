@@ -97,6 +97,7 @@ mkdir -p $(pwd)/android_build_out/$CPU \
 PREFIX=$(pwd)/android_build_out/$CPU
 
 build_android(){
+
     ./configure \
     --prefix=$PREFIX \
     --target-os=android \
