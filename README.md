@@ -47,11 +47,11 @@ NDK版本  android-ndk-r14b
 编译armv7-a版本动态库脚本build_android_ffmpeg_armv7a.sh内容 \
 #!/bin/bash
 
-NDK_PATH=/opt/android/android-ndk-r14b
-SYSROOT=$NDK_PATH/platforms/android-21/arch-arm
-TOOLCHAIN=$NDK_PATH/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64
-CPU=armeabi-v7a
-mkdir -p $(pwd)/android_build_out/$CPU
+NDK_PATH=/opt/android/android-ndk-r14b \
+SYSROOT=$NDK_PATH/platforms/android-21/arch-arm \
+TOOLCHAIN=$NDK_PATH/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 \
+CPU=armeabi-v7a \
+mkdir -p $(pwd)/android_build_out/$CPU \
 PREFIX=$(pwd)/android_build_out/$CPU
 
 function build_android {
@@ -89,11 +89,11 @@ make install
 编译armv8-a版本动态库脚本build_android_ffmpeg_armv8a.sh内容 \
 #!/bin/bash
 
-NDK_PATH=/opt/android/android-ndk-r14b
-SYSROOT=$NDK_PATH/platforms/android-21/arch-arm64
-TOOLCHAIN=$NDK_PATH/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64
-CPU=arm64-v8a
-mkdir -p $(pwd)/android_build_out/$CPU
+NDK_PATH=/opt/android/android-ndk-r14b \
+SYSROOT=$NDK_PATH/platforms/android-21/arch-arm64 \
+TOOLCHAIN=$NDK_PATH/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 \
+CPU=arm64-v8a \
+mkdir -p $(pwd)/android_build_out/$CPU \
 PREFIX=$(pwd)/android_build_out/$CPU
 
 build_android(){
